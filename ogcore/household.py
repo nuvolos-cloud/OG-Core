@@ -6,6 +6,7 @@ Household functions.
 
 # Packages
 import numpy as np
+from numba import jit
 from ogcore import tax, utils
 
 """
@@ -15,6 +16,7 @@ from ogcore import tax, utils
 """
 
 
+@jit(nopython=True)
 def marg_ut_cons(c, sigma):
     r"""
     Compute the marginal utility of consumption.
@@ -45,6 +47,7 @@ def marg_ut_cons(c, sigma):
     return output
 
 
+@jit(nopython=True)
 def marg_ut_labor(n, chi_n, p):
     r"""
     Compute the marginal disutility of labor.
@@ -136,6 +139,7 @@ def marg_ut_labor(n, chi_n, p):
     return output
 
 
+@jit(nopython=True)
 def get_bq(BQ, j, p, method):
     r"""
     Calculate bequests to each household.
@@ -198,6 +202,7 @@ def get_bq(BQ, j, p, method):
     return bq
 
 
+@jit(nopython=True)
 def get_tr(TR, j, p, method):
     r"""
     Calculate transfers to each household.
@@ -240,6 +245,7 @@ def get_tr(TR, j, p, method):
     return tr
 
 
+@jit(nopython=True)
 def get_rm(RM, j, p, method):
     r"""
     Calculate remittances to each household.
@@ -282,6 +288,7 @@ def get_rm(RM, j, p, method):
     return rm
 
 
+@jit(nopython=True)
 def get_cons(r_p, w, p_tilde, b, b_splus1, n, bq, rm, net_tax, e, p):
     r"""
     Calculate household composite consumption.
@@ -325,6 +332,7 @@ def get_cons(r_p, w, p_tilde, b, b_splus1, n, bq, rm, net_tax, e, p):
     return cons
 
 
+@jit(nopython=True)
 def get_ci(c_s, p_i, p_tilde, tau_c, alpha_c, method="SS"):
     r"""
     Compute consumption of good i given amount of composite consumption
@@ -368,6 +376,7 @@ def get_ci(c_s, p_i, p_tilde, tau_c, alpha_c, method="SS"):
     return c_si
 
 
+@jit(nopython=True)
 def FOC_savings(
     r,
     w,
@@ -556,6 +565,7 @@ def FOC_savings(
     return euler_error
 
 
+@jit(nopython=True)
 def FOC_labor(
     r,
     w,
@@ -722,6 +732,7 @@ def FOC_labor(
     return FOC_error
 
 
+@jit(nopython=True)
 def get_y(r_p, w, b_s, n, p, method):
     r"""
     Compute household income before taxes.
