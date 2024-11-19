@@ -6,6 +6,7 @@ Functions to compute economic aggregates.
 
 # Packages
 import numpy as np
+from numba import jit
 from ogcore import tax, pensions
 
 """
@@ -467,7 +468,7 @@ def revenue(
         iit_revenue,
     )
 
-
+@jit(nopython=True)
 def get_r_p(r, r_gov, p_m, K_vec, K_g, D, MPKg_vec, p, method):
     r"""
     Compute the interest rate on the household's portfolio of assets,
@@ -516,7 +517,7 @@ def get_r_p(r, r_gov, p_m, K_vec, K_g, D, MPKg_vec, p, method):
 
     return np.squeeze(r_p)
 
-
+@jit(nopython=True)
 def resource_constraint(Y, C, G, I_d, I_g, net_capital_flows, RM):
     r"""
     Compute the error in the resource constraint.
@@ -574,6 +575,7 @@ def get_capital_outflows(r, K_f, new_borrowing_f, debt_service_f, p):
     return net_flow
 
 
+@jit(nopython=True)
 def get_K_splits(B, K_demand_open, D_d, zeta_K):
     r"""
     Returns total domestic capital as well as amounts of domestic
@@ -616,6 +618,7 @@ def get_K_splits(B, K_demand_open, D_d, zeta_K):
     return K, K_d, K_f
 
 
+@jit(nopython=True)
 def get_ptilde(p_i, tau_c, alpha_c, method="SS"):
     r"""
     Calculate price of composite good.
@@ -632,10 +635,12 @@ def get_ptilde(p_i, tau_c, alpha_c, method="SS"):
     Returns:
         p_tilde (array_like): tax-inclusive price of composite good
     """
+    p_tilde = np.ones(p_i.shape[0])
     if method == "SS":
-        p_tilde = np.prod((((1 + tau_c) * p_i) / alpha_c) ** alpha_c)
+        p_tilde[0] = np.prod((((1 + tau_c) * p_i) / alpha_c) ** alpha_c)
     else:  # TPI case
         alpha_c = alpha_c.reshape(1, alpha_c.shape[0])
-        p_tilde = np.prod((((1 + tau_c) * p_i) / alpha_c) ** alpha_c, axis=1)
+        for i in range(p_i.shape[0]):
+            p_tilde[i] = np.prod((((1 + tau_c[i]) * p_i[i]) / alpha_c) ** alpha_c)
 
     return p_tilde

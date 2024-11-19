@@ -92,7 +92,20 @@ def euler_equation_solver(guesses, *args):
         p.mtry_params[-1],
         None,
         j,
-        p,
+        p.sigma,
+        p.g_y,
+        p.chi_b,
+        p.beta,
+        p.capital_income_tax_noncompliance_rate,
+        p.labor_income_tax_noncompliance_rate,
+        p.e,
+        p.h_wealth,
+        p.m_wealth,
+        p.p_wealth,
+        p.tau_payroll,
+        p.lambdas,
+        p.tau_bq,
+        p.pension_params,
         "SS",
     )
     error2 = household.FOC_labor(
@@ -108,12 +121,28 @@ def euler_equation_solver(guesses, *args):
         tr,
         ubi,
         theta,
-        p.chi_n[-1, :],
+        p.chi_n,
         p.etr_params[-1],
         p.mtrx_params[-1],
         None,
         j,
-        p,
+        p.sigma,
+        p.g_y,
+        p.chi_b,
+        p.beta,
+        p.capital_income_tax_noncompliance_rate,
+        p.labor_income_tax_noncompliance_rate,
+        p.e,
+        p.h_wealth,
+        p.m_wealth,
+        p.p_wealth,
+        p.tau_payroll,
+        p.lambdas,
+        p.tau_bq,
+        p.pension_params,
+        p.b_ellipse,
+        p.ltilde,
+        p.upsilon,
         "SS",
     )
 
@@ -146,8 +175,8 @@ def euler_equation_solver(guesses, *args):
         j,
         False,
         "SS",
-        p.e[-1, :, j],
-        p.etr_params[-1],
+        p.e,
+        p.etr_params,
         p,
     )
     cons = household.get_cons(
@@ -160,7 +189,7 @@ def euler_equation_solver(guesses, *args):
         bq,
         rm,
         taxes,
-        p.e[-1, :, j],
+        p.e,
         p,
     )
     mask6 = cons < 0
@@ -237,9 +266,9 @@ def inner_loop(outer_loop_vars, p, client):
     euler_errors = np.zeros((2 * p.S, p.J))
 
     p_tilde = aggr.get_ptilde(p_i, p.tau_c[-1, :], p.alpha_c)
-    bq = household.get_bq(BQ, None, p, "SS")
-    rm = household.get_rm(RM, None, p, "SS")
-    tr = household.get_tr(TR, None, p, "SS")
+    bq = household.get_bq_ss(BQ, None, p.use_zeta, p.zeta, p.lambdas, p.omega_SS, p.S, p.J)
+    rm = household.get_rm_ss(RM, None, p.eta_RM, p.lambdas, p.omega_SS, p.S, p.J)
+    tr = household.get_tr_ss(TR, None, p.eta, p.lambdas, p.omega_SS, p.S, p.J)
     ubi = p.ubi_nom_array[-1, :, :] / factor
 
     lazy_values = []
@@ -311,7 +340,16 @@ def inner_loop(outer_loop_vars, p, client):
         "SS",
         np.squeeze(p.e[-1, :, :]),
         etr_params_3D,
-        p,
+        p.tau_payroll[-1, :, :],
+        p.h_wealth[-1, :],
+        p.m_wealth[-1, :],
+        p.p_wealth[-1, :],
+        p.lambdas,
+        p.tau_bq[-1, :],
+        p.pension_params,
+        p.tax_func_type,
+        p.labor_income_tax_noncompliance_rate[-1, :],
+        p.capital_income_tax_noncompliance_rate[-1, :],
     )
     c_s = household.get_cons(
         r_p,
@@ -324,7 +362,7 @@ def inner_loop(outer_loop_vars, p, client):
         rm,
         net_tax,
         np.squeeze(p.e[-1, :, :]),
-        p,
+        p.g_y,
     )
     c_i = household.get_ci(c_s, p_i, p_tilde, p.tau_c[-1, :], p.alpha_c)
     L = aggr.get_L(nssmat, p, "SS")
@@ -409,10 +447,10 @@ def inner_loop(outer_loop_vars, p, client):
     else:
         new_factor = factor
     new_BQ = aggr.get_BQ(new_r_p, bssmat, None, p, "SS", False)
-    new_bq = household.get_bq(new_BQ, None, p, "SS")
+    new_bq = household.get_bq_ss(new_BQ, None, p.use_zeta, p.zeta, p.lambdas, p.omega_SS, p.S, p.J)
     new_RM = aggr.get_RM(Y, p, "SS")
-    new_rm = household.get_rm(new_RM, None, p, "SS")
-    tr = household.get_tr(TR, None, p, "SS")
+    new_rm = household.get_rm_ss(new_RM, None, p.eta_RM, p.lambdas, p.omega_SS, p.S, p.J)
+    tr = household.get_tr_ss(TR, None, p.eta, p.lambdas, p.omega_SS, p.S, p.J)
     theta = pensions.replacement_rate_vals(nssmat, new_w, new_factor, None, p)
 
     # Find updated goods prices
@@ -762,9 +800,9 @@ def SS_solver(
     Iss = aggr.get_I(bssmat_splus1, Kss, Kss, p, "SS")
     BQss = new_BQ
     factor_ss = factor
-    bqssmat = household.get_bq(BQss, None, p, "SS")
-    trssmat = household.get_tr(TR_ss, None, p, "SS")
-    rmssmat = household.get_rm(RM_ss, None, p, "SS")
+    bqssmat = household.get_bq_ss(BQss, None, p.use_zeta, p.zeta, p.lambdas, p.omega_SS, p.S, p.J)
+    trssmat = household.get_tr_ss(TR_ss, None, p.eta, p.lambdas, p.omega_SS, p.S, p.J)
+    rmssmat = household.get_rm_ss(RM_ss, None, p.eta_RM, p.lambdas, p.omega_SS, p.S, p.J)
     ubissmat = p.ubi_nom_array[-1, :, :] / factor_ss
     theta = pensions.replacement_rate_vals(nssmat, wss, factor_ss, None, p)
 
@@ -871,7 +909,7 @@ def SS_solver(
         p,
     )
     yss_before_tax_mat = household.get_y(
-        r_p_ss, wss, bssmat_s, nssmat, p, "SS"
+        r_p_ss, wss, bssmat_s, nssmat, np.squeeze(p.e[-1, :, :]), "SS"
     )
     Css = aggr.get_C(cssmat, p, "SS")
     c_i_ss_mat = household.get_ci(

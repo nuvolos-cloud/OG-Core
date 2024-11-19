@@ -13,6 +13,7 @@ income.
 import time
 import os
 import numpy as np
+from numba import jit
 import scipy.optimize as opt
 from dask import delayed, compute
 import dask.multiprocessing
@@ -46,7 +47,7 @@ Define Functions
 ------------------------------------------------------------------------
 """
 
-
+@jit(nopython=True)
 def get_tax_rates(
     params,
     X,

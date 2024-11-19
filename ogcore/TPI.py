@@ -11,6 +11,7 @@ This module contains the following functions:
 
 # imports
 import numpy as np
+from numba import jit
 import pickle
 import scipy.optimize as opt
 from dask import delayed, compute
@@ -136,8 +137,41 @@ def get_initial_SS_values(p):
 
 
 def firstdoughnutring(
-    guesses, r, w, p_tilde, bq, rm, tr, theta, factor, ubi, j, initial_b, p
-):
+    guesses: np.ndarray,
+    r: float,
+    w: float,
+    p_tilde: float,
+    bq: float,
+    rm: float,
+    tr: float,
+    theta: np.ndarray,
+    factor: float,
+    ubi: float,
+    j: int,
+    initial_b: np.ndarray,
+    rho: np.ndarray,
+    etr_params: list,
+    mtry_params: list,
+    sigma: float,
+    g_y: float,
+    chi_b: float,
+    beta: float,
+    capital_income_tax_noncompliance_rate: float,
+    labor_income_tax_noncompliance_rate: float,
+    e: np.ndarray,
+    h_wealth: float,
+    m_wealth: float,
+    p_wealth: float,
+    tau_payroll: float,
+    lambdas: np.ndarray,
+    tau_bq: float,
+    pension_params: np.ndarray,
+    chi_n: np.ndarray,
+    mtrx_params: list,
+    b_ellipse: float,
+    ltilde: float,
+    upsilon: float
+) -> list:
     """
     Solves the first entries of the upper triangle of the twist doughnut. This
     is separate from the main TPI function because the values of b and n are
@@ -157,7 +191,28 @@ def firstdoughnutring(
             period 0
         j (int): index of ability type
         initial_b (Numpy array): SxJ matrix, savings of agents alive at T=0
-        p (OG-Core Specifications object): model parameters
+        rho (Numpy array): mortality rates
+        etr_params (list): ETR function parameters
+        mtry_params (list): capital income MTR function parameters
+        sigma (scalar): coefficient of relative risk aversion
+        g_y (scalar): growth rate of technology
+        chi_b (scalar): coefficient of bequest motive
+        beta (scalar): discount factor
+        capital_income_tax_noncompliance_rate (scalar): noncompliance rate for capital income tax
+        labor_income_tax_noncompliance_rate (scalar): noncompliance rate for labor income tax
+        e (Numpy array): effective labor units
+        h_wealth (scalar): wealth tax parameter
+        m_wealth (scalar): wealth tax parameter
+        p_wealth (scalar): wealth tax parameter
+        tau_payroll (scalar): payroll tax rate
+        lambdas (Numpy array): population weights
+        tau_bq (scalar): bequest tax rate
+        pension_params (Numpy array): pension parameters
+        chi_n (Numpy array): utility weight on labor
+        mtrx_params (list): labor income MTR function parameters
+        b_ellipse (scalar): parameter for Frisch elasticity of labor supply
+        ltilde (scalar): maximum labor supply
+        upsilon (scalar): parameter for Frisch elasticity of labor supply
 
     Returns:
         euler errors (Numpy array): errors from first order conditions,
@@ -173,7 +228,7 @@ def firstdoughnutring(
         np.array([r]),
         np.array([w]),
         np.array([p_tilde]),
-        b_s,
+        np.array([b_s]),
         np.array([b_splus1]),
         np.array([n]),
         np.array([bq]),
@@ -181,13 +236,26 @@ def firstdoughnutring(
         factor,
         np.array([tr]),
         np.array([ubi]),
-        theta[j],
-        p.rho[0, -1],
-        p.etr_params[0][-1],
-        p.mtry_params[0][-1],
+        np.array([theta[j]]),
+        np.array([rho[0, -1]]),
+        etr_params[0][-1],
+        mtry_params[0][-1],
         None,
         j,
-        p,
+        sigma,
+        g_y,
+        chi_b,
+        beta,
+        capital_income_tax_noncompliance_rate,
+        labor_income_tax_noncompliance_rate,
+        e,
+        h_wealth,
+        m_wealth,
+        p_wealth,
+        tau_payroll,
+        lambdas,
+        tau_bq,
+        pension_params,
         "TPI_scalar",
     )
 
@@ -204,12 +272,28 @@ def firstdoughnutring(
         np.array([tr]),
         np.array([ubi]),
         theta[j],
-        p.chi_n[0, -1],
-        p.etr_params[0][-1],
-        p.mtrx_params[0][-1],
+        chi_n[0, -1],
+        etr_params[0][-1],
+        mtrx_params[0][-1],
         None,
         j,
-        p,
+        sigma,
+        g_y,
+        chi_b,
+        beta,
+        capital_income_tax_noncompliance_rate,
+        labor_income_tax_noncompliance_rate,
+        e,
+        h_wealth,
+        m_wealth,
+        p_wealth,
+        tau_payroll,
+        lambdas,
+        tau_bq,
+        pension_params,
+        b_ellipse,
+        ltilde,
+        upsilon,
         "TPI_scalar",
     )
 
@@ -221,26 +305,45 @@ def firstdoughnutring(
     return [np.squeeze(error1)] + [np.squeeze(error2)]
 
 
+@jit(nopython=True)
 def twist_doughnut(
-    guesses,
-    r,
-    w,
-    p_tilde,
-    bq,
-    rm,
-    tr,
-    theta,
-    factor,
-    ubi,
-    j,
-    s,
-    t,
-    etr_params,
-    mtrx_params,
-    mtry_params,
-    initial_b,
-    p,
-):
+    guesses: list,
+    r: np.ndarray,
+    w: np.ndarray,
+    p_tilde: np.ndarray,
+    bq: np.ndarray,
+    rm: np.ndarray,
+    tr: np.ndarray,
+    theta: np.ndarray,
+    factor: float,
+    ubi: np.ndarray,
+    j: int,
+    s: int,
+    t: int,
+    etr_params: list,
+    mtrx_params: list,
+    mtry_params: list,
+    initial_b: np.ndarray,
+    sigma: float,
+    g_y: float,
+    chi_b: float,
+    beta: float,
+    capital_income_tax_noncompliance_rate: float,
+    labor_income_tax_noncompliance_rate: float,
+    e: np.ndarray,
+    h_wealth: float,
+    m_wealth: float,
+    p_wealth: float,
+    tau_payroll: float,
+    lambdas: np.ndarray,
+    tau_bq: float,
+    pension_params: np.ndarray,
+    b_ellipse: float,
+    ltilde: float,
+    upsilon: float,
+    chi_n: np.ndarray,
+    rho: np.ndarray,
+) -> list:
     """
     Solves the upper triangle of time path iterations. These are the agents who
     are alive at time T=0 so that we do not solve for their full lifetime (so
@@ -268,7 +371,25 @@ def twist_doughnut(
             parameters, lists of lists with size = sxsxnum_params
         initial_b (Numpy array): savings of agents alive at T=0,
             size = SxJ
-        p (OG-Core Specifications object): model parameters
+        sigma (scalar): coefficient of relative risk aversion
+        g_y (scalar): growth rate of technology
+        chi_b (scalar): coefficient of bequest motive
+        beta (scalar): discount factor
+        capital_income_tax_noncompliance_rate (scalar): noncompliance rate for capital income tax
+        labor_income_tax_noncompliance_rate (scalar): noncompliance rate for labor income tax
+        e (Numpy array): effective labor units
+        h_wealth (scalar): wealth tax parameter
+        m_wealth (scalar): wealth tax parameter
+        p_wealth (scalar): wealth tax parameter
+        tau_payroll (scalar): payroll tax rate
+        lambdas (Numpy array): population weights
+        tau_bq (scalar): bequest tax rate
+        pension_params (Numpy array): pension parameters
+        b_ellipse (scalar): parameter for Frisch elasticity of labor supply
+        ltilde (scalar): maximum labor supply
+        upsilon (scalar): parameter for Frisch elasticity of labor supply
+        chi_n (Numpy array): utility weight on labor
+        rho (Numpy array): mortality rates
 
     Returns:
         euler errors (Numpy array): errors from first order conditions,
@@ -279,7 +400,7 @@ def twist_doughnut(
     b_guess = np.array(guesses[:length])
     n_guess = np.array(guesses[length:])
 
-    if length == p.S:
+    if length == len(initial_b):
         b_s = np.array([0] + list(b_guess[:-1]))
     else:
         b_s = np.array([(initial_b[-(s + 3), j])] + list(b_guess[:-1]))
@@ -289,8 +410,8 @@ def twist_doughnut(
     r_s = r[t : t + length]
     p_tilde_s = p_tilde[t : t + length]
     n_s = n_guess
-    chi_n_s = np.diag(p.chi_n[t : t + p.S, :], max(p.S - length, 0))
-    rho_s = np.diag(p.rho[t : t + p.S, :], max(p.S - length, 0))
+    chi_n_s = np.diag(chi_n[t : t + len(initial_b), :], max(len(initial_b) - length, 0))
+    rho_s = np.diag(rho[t : t + len(initial_b), :], max(len(initial_b) - length, 0))
 
     error1 = household.FOC_savings(
         r_s,
@@ -310,7 +431,20 @@ def twist_doughnut(
         mtry_params,
         t,
         j,
-        p,
+        sigma,
+        g_y,
+        chi_b,
+        beta,
+        capital_income_tax_noncompliance_rate,
+        labor_income_tax_noncompliance_rate,
+        e,
+        h_wealth,
+        m_wealth,
+        p_wealth,
+        tau_payroll,
+        lambdas,
+        tau_bq,
+        pension_params,
         "TPI",
     )
 
@@ -332,14 +466,30 @@ def twist_doughnut(
         mtrx_params,
         t,
         j,
-        p,
+        sigma,
+        g_y,
+        chi_b,
+        beta,
+        capital_income_tax_noncompliance_rate,
+        labor_income_tax_noncompliance_rate,
+        e,
+        h_wealth,
+        m_wealth,
+        p_wealth,
+        tau_payroll,
+        lambdas,
+        tau_bq,
+        pension_params,
+        b_ellipse,
+        ltilde,
+        upsilon,
         "TPI",
     )
 
     # Check and punish constraint violations
     mask1 = n_guess < 0
     error2[mask1] += 1e12
-    mask2 = n_guess > p.ltilde
+    mask2 = n_guess > ltilde
     error2[mask2] += 1e12
     mask4 = b_guess <= 0
     error2[mask4] += 1e12
@@ -397,11 +547,11 @@ def inner_loop(guesses, outer_loop_vars, initial_values, ubi, j, ind, p):
     ).sum(axis=2)
     p_tilde = aggr.get_ptilde(p_i[:, :], p.tau_c[:, :], p.alpha_c, "TPI")
     # compute bq
-    bq = household.get_bq(BQ, None, p, "TPI")
+    bq = household.get_bq_tpi(BQ, j, p.use_zeta, p.zeta, p.lambdas, p.omega, p.S, p.J,)
     # compute tr
-    tr = household.get_tr(TR, None, p, "TPI")
+    tr = household.get_tr_tpi(TR, j, p.eta, p.lambdas, p.omega, p.S, p.J)
     # compute rm
-    rm = household.get_rm(RM, None, p, "TPI")
+    rm = household.get_rm_tpi(RM, j, p.eta_RM, p.lambdas, p.omega, p.S, p.J)
 
     # initialize arrays
     b_mat = np.zeros((p.T + p.S, p.S))
@@ -423,7 +573,28 @@ def inner_loop(guesses, outer_loop_vars, initial_values, ubi, j, ind, p):
             ubi[0, -1, j],
             j,
             initial_b,
-            p,
+            p.rho,
+            p.etr_params[0],
+            p.mtry_params[0],
+            p.sigma,
+            p.g_y,
+            p.chi_b,
+            p.beta,
+            p.capital_income_tax_noncompliance_rate,
+            p.labor_income_tax_noncompliance_rate,
+            p.e,
+            p.h_wealth,
+            p.m_wealth,
+            p.p_wealth,
+            p.tau_payroll,
+            p.lambdas,
+            p.tau_bq,
+            p.pension_params,
+            p.chi_n,
+            p.mtrx_params[0],
+            p.b_ellipse,
+            p.ltilde,
+            p.upsilon,
         ),
         method=p.FOC_root_method,
         tol=MINIMIZER_TOL,
@@ -831,9 +1002,9 @@ def run_TPI(p, client=None):
             for t in range(p.T)
         ]
 
-        bqmat = household.get_bq(BQ, None, p, "TPI")
-        rmmat = household.get_rm(RM, None, p, "TPI")
-        trmat = household.get_tr(TR, None, p, "TPI")
+        bqmat = household.get_bq_tpi(BQ, None, p.use_zeta, p.zeta, p.lambdas, p.omega, p.S, p.J)
+        rmmat = household.get_rm_tpi(RM, None, p.eta_RM, p.lambdas, p.omega, p.S, p.J)
+        trmat = household.get_tr_tpi(TR, None, p.eta, p.lambdas, p.omega, p.S, p.J)
         tax_mat = tax.net_taxes(
             r_p[: p.T],
             w[: p.T],
@@ -883,7 +1054,7 @@ def run_TPI(p, client=None):
             wpath[: p.T, :, :],
             bmat_s[: p.T, :, :],
             n_mat[: p.T, :, :],
-            p,
+            p.e,
             "TPI",
         )
 
@@ -1050,7 +1221,9 @@ def run_TPI(p, client=None):
             axis=0,
         )
         BQnew = aggr.get_BQ(r_p_new[: p.T], b_mat_shift, None, p, "TPI", False)
-        bqmat_new = household.get_bq(BQnew, None, p, "TPI")
+        bqmat_new = household.get_bq(
+            BQnew, None, p.use_zeta, p.zeta, p.lambdas, p.omega_SS, p.omega, p.S, p.J, "TPI"
+        )
         (
             total_tax_rev,
             iit_payroll_tax_revenue,

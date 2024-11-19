@@ -7,6 +7,7 @@ import urllib
 from tempfile import NamedTemporaryFile
 from io import BytesIO
 import numpy as np
+from numba import jit
 import pandas as pd
 from scipy.interpolate import CubicSpline
 import pickle
@@ -296,6 +297,7 @@ def dict_compare(
     return check
 
 
+@jit(nopython=True)
 def to_timepath_shape(some_array):
     """
     This function takes an vector of length T and tiles it to fill a
@@ -1411,3 +1413,48 @@ def json_to_dict(json_text):
         msg += bline + "\n"
         raise ValueError(msg)
     return ordered_dict
+
+
+@jit(nopython=True)
+def tile_numba_1d(arr, reps):
+    print(f"Reshaping to {arr.shape[0] * reps[0]}")
+    output_shape = (arr.shape[0] * reps[0],)
+    result = np.empty(output_shape, dtype=arr.dtype)
+    for i in range(reps[0]):
+        result[i * arr.shape[0]:(i + 1) * arr.shape[0]] = arr
+    return result
+
+
+@jit(nopython=True)
+def tile_numba_2d(arr, reps):
+    print(f"Reshaping to {arr.shape[0] * reps[0]} x {arr.shape[1] * reps[1]}")
+    output_shape = (arr.shape[0] * reps[0], arr.shape[1] * reps[1])
+    result = np.empty(output_shape, dtype=arr.dtype)
+    
+    for i in range(reps[0]):
+        for j in range(reps[1]):
+            result[
+                i * arr.shape[0]:(i + 1) * arr.shape[0],
+                j * arr.shape[1]:(j + 1) * arr.shape[1]
+            ] = arr
+    return result
+
+
+@jit(nopython=True)
+def tile_numba_3d(arr, reps):
+    output_shape = (
+        arr.shape[0] * reps[0],
+        arr.shape[1] * reps[1],
+        arr.shape[2] * reps[2]
+    )
+    result = np.empty(output_shape, dtype=arr.dtype)
+    
+    for i in range(reps[0]):
+        for j in range(reps[1]):
+            for k in range(reps[2]):
+                result[
+                    i * arr.shape[0]:(i + 1) * arr.shape[0],
+                    j * arr.shape[1]:(j + 1) * arr.shape[1],
+                    k * arr.shape[2]:(k + 1) * arr.shape[2]
+                ] = arr
+    return result
